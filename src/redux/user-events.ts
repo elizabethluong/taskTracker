@@ -89,7 +89,7 @@ export const createUserEvent = (): ThunkAction<
   try {
     const dateStart = selectDateStart(getState());
     const event: Omit<UserEvent, "id"> = {
-      title: "No name",
+      title: "Click to add Task",
       dateStart,
       dateEnd: new Date().toISOString(),
     };
@@ -152,9 +152,51 @@ export const deleteUserEvent = (
   }
 };
 
-const userEventsReducer = (
+const UPDATE_REQUEST = "userEvents/update_request";
+interface UpdateRequestAction extends Action<typeof UPDATE_REQUEST> {}
+
+const UPDATE_SUCCESS = "userEvents/update_success";
+interface UpdateSuccessAction extends Action<typeof UPDATE_SUCCESS> {
+  payload: { event: UserEvent };
+}
+
+const UPDATE_FAILURE = "userEvents/update_failure";
+interface UpdateFailureAction extends Action<typeof UPDATE_FAILURE> {}
+
+export const updateUserEvent = (
+  event: UserEvent
+): ThunkAction<
+  Promise<void>,
+  RootState,
+  undefined,
+  UpdateRequestAction | UpdateSuccessAction | UpdateFailureAction
+> => async (dispatch) => {
+  dispatch({ type: UPDATE_REQUEST });
+
+  try {
+    const response = await fetch(`http://localhost:3001/events/${event.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-type": "application/json",
+      },
+      body: JSON.stringify(event),
+    });
+    const updatedEvent: UserEvent = await response.json();
+    dispatch({ type: UPDATE_SUCCESS, payload: { event: updatedEvent } });
+  } catch (e) {
+    dispatch({
+      type: UPDATE_FAILURE,
+    });
+  }
+};
+
+export const userEventsReducer = (
   state: UserEventsState = initialState,
-  action: LoadSuccessAction | CreateSuccessAction | DeleteSuccessAction
+  action:
+    | LoadSuccessAction
+    | CreateSuccessAction
+    | DeleteSuccessAction
+    | UpdateSuccessAction
 ) => {
   switch (action.type) {
     case LOAD_SUCCESS:
@@ -167,6 +209,7 @@ const userEventsReducer = (
           return byIds;
         }, {}),
       };
+
     case CREATE_SUCCESS:
       const { event } = action.payload;
       return {
@@ -174,6 +217,7 @@ const userEventsReducer = (
         allIds: [...state.allIds, event.id],
         byIds: { ...state.byIds, [event.id]: event },
       };
+
     case DELETE_SUCCESS:
       const { id } = action.payload;
       const newState = {
@@ -181,9 +225,18 @@ const userEventsReducer = (
         byIds: { ...state.byIds },
         allIds: state.allIds.filter((storedId) => storedId !== id),
       };
-
       delete newState.byIds[id];
       return newState;
+
+    case UPDATE_SUCCESS:
+      const { event: updatedEvent } = action.payload;
+      return {
+        ...state,
+        byIds: {
+          ...state.byIds,
+          [updatedEvent.id]: updatedEvent,
+        },
+      };
 
     default:
       return state;
