@@ -1,10 +1,11 @@
-import React from 'react';
-import './App.css';
+import React from "react";
+import "./App.css";
+import Recorder from "../recorder/Recorder";
 
 function App() {
   return (
     <div className="App">
-     hello
+      <Recorder />
     </div>
   );
 }
