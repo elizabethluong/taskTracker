@@ -3,14 +3,13 @@ import { useDispatch, useSelector } from "react-redux";
 import { start, selectDateStart } from "../../redux/recorder";
 import "./Recorder.css";
 import cx from "classnames";
-
-const addZero = (num: number) => (num < 10 ? `0${num}` : `${num}`);
+import { addZero } from "../..//lib/utils";
 
 const Recorder = () => {
   const dispatch = useDispatch();
   const dateStart = useSelector(selectDateStart);
   const started = dateStart != "";
-  
+
   let interval = useRef<number>(0);
   const [, setCount] = useState<number>(0);
 
